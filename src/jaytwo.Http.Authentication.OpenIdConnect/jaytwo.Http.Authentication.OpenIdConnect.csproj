@@ -13,34 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="jaytwo.FluentHttp" Version="0.1.0-beta-20200703203254" />
-    <PackageReference Include="jaytwo.Http.Authentication" Version="0.1.0-beta-20200703213032" />
+    <PackageReference Include="jaytwo.Http.Authentication" Version="0.1.0-beta-20200703225357" />
+    <PackageReference Include="jaytwo.FluentHttp" Version="0.1.0-beta-20200703224605" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
-    <PackageReference Include="Newtonsoft.Json" Version="8.*" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.1'">
-    <PackageReference Include="Newtonsoft.Json" Version="9.*" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
-    <PackageReference Include="Newtonsoft.Json" Version="9.*" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.6'">
-    <PackageReference Include="Newtonsoft.Json" Version="9.*" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Newtonsoft.Json" Version="9.*" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
-    <PackageReference Include="Newtonsoft.Json" Version="9.*" />
-  </ItemGroup>
-  
   <!--
     // https://docs.microsoft.com/en-us/dotnet/standard/frameworks
     // preprocessor symbols for free:
