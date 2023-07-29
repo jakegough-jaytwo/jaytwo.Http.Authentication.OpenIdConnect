@@ -1,20 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45;netstandard1.1;netstandard1.3;netstandard1.6;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
     <VersionPrefix>0.1.0</VersionPrefix>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/jakegough/jaytwo.Http.Authentication.OpenIdConnect.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <LangVersion>Latest</LangVersion>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
-    <Reference Include="System.Net.Http" />
-  </ItemGroup>
-
   <ItemGroup>
-    <PackageReference Include="jaytwo.Http.Authentication" Version="0.1.0-beta-20200703225357" />
-    <PackageReference Include="jaytwo.FluentHttp" Version="0.1.0-beta-20200703224605" />
+    <PackageReference Include="jaytwo.Http.Authentication" Version="0.1.0-*" />
   </ItemGroup>
 
   <!--
@@ -26,7 +22,7 @@
 
   <!-- sourcelink (only needed on the published package project) -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -52,7 +48,7 @@
 
   <!-- coverlet & cobertura -->
   <ItemGroup>
-    <PackageReference Include="coverlet.msbuild" Version="2.9.0" PrivateAssets="All" />
+    <PackageReference Include="coverlet.msbuild" Version="6.0.0" PrivateAssets="All" />
   </ItemGroup>
 
   <PropertyGroup>

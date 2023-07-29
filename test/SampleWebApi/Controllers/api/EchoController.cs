@@ -8,27 +8,26 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace SampleWebApi.Controllers
-{
-    [Route("api/[controller]")]
-    [ApiController]
-    public class EchoController : ControllerBase
-    {
-        [HttpGet]
-        [Route("echo")]
-        public IActionResult Echo(string value)
-        {
-            return Content(value);
-        }
+namespace SampleWebApi.Controllers;
 
-        [Authorize]
-        [HttpGet]
-        [Route("userInfo")]
-        public async Task<IActionResult> UserInfo()
-        {             
-            var authInfo = await HttpContext.AuthenticateAsync();
-            //var email = authInfo.Principal.Claims.SingleOrDefault(x => x.Type == ClaimTypes.Email).Value;
-            return Content("ok");
-        }
+[Route("api/[controller]")]
+[ApiController]
+public class EchoController : ControllerBase
+{
+    [HttpGet]
+    [Route("echo")]
+    public IActionResult Echo(string value)
+    {
+        return Content(value);
+    }
+
+    [Authorize("ApiScope")]
+    [HttpGet]
+    [Route("userInfo")]
+    public async Task<IActionResult> UserInfo()
+    {
+        var authInfo = await HttpContext.AuthenticateAsync();
+        //var email = authInfo.Principal.Claims.SingleOrDefault(x => x.Type == ClaimTypes.Email).Value;
+        return Content("ok");
     }
 }

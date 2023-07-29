@@ -1,15 +1,16 @@
 using System;
 
-namespace jaytwo.Http.Authentication.OpenIdConnect
+namespace jaytwo.Http.Authentication.OpenIdConnect;
+
+public class ClientCredentialsTokenConfig
 {
-    public class ClientCredentialsTokenConfig
-    {
-        public string TokenUrl { get; set; }
+    public string TokenUrl { get; set; }
 
-        public string ClientId { get; set; }
+    public string ClientId { get; set; }
 
-        public string ClientSecret { get; set; }
+    public string ClientSecret { get; set; }
 
-        public string Resource { get; set; }
-    }
+    public string Resource { get; set; }
+
+    public string Scope { get; set; }
 }

@@ -1,10 +1,10 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace jaytwo.Http.Authentication.OpenIdConnect
+namespace jaytwo.Http.Authentication.OpenIdConnect;
+
+public interface IAccessTokenProvider
 {
-    public interface IAccessTokenProvider
-    {
-        Task<AccessTokenResponse> GetAccessTokenAsync();
-    }
+    Task<AccessTokenResponse> GetAccessTokenAsync(CancellationToken cancellationToken);
 }

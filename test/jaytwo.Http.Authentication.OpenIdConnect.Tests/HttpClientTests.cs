@@ -5,91 +5,93 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using jaytwo.FluentHttp;
+using jaytwo.Http;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace jaytwo.Http.Authentication.OpenIdConnect.Tests
+namespace jaytwo.Http.Authentication.OpenIdConnect.Tests;
+
+public class HttpClientTests : IDisposable
 {
-    public class HttpClientTests : IDisposable
+    private readonly ITestOutputHelper _output;
+    private readonly TestServerContext _identityServerContext;
+    private readonly TestServerContext _webApiServerContext;
+    private readonly IHttpClient _httpClient;
+    private readonly IBearerTokenProvider _clientCredentialsTokenProvider;
+
+    public HttpClientTests(ITestOutputHelper output)
     {
-        private readonly ITestOutputHelper _output;
-        private readonly TestServerContext _identityServerContext;
-        private readonly TestServerContext _webApiServerContext;
-        private readonly HttpClient _httpClient;
-        private readonly ITokenProvider _clientCredentialsTokenProvider;
+        _output = output;
+        _httpClient = new HttpClient().Wrap();
+        _identityServerContext = TestServerContext.Create(SampleIdentityServer.Program.CreateWebHostBuilder);
+        _webApiServerContext = TestServerContext.Create(() => SampleWebApi.Program.CreateWebHostBuilder(new[] { $"--Authentication:IdentityServer:Authority", _identityServerContext.Url }));
 
-        public HttpClientTests(ITestOutputHelper output)
+        _clientCredentialsTokenProvider = new ClientCredentialsTokenProvider(_httpClient, new ClientCredentialsTokenConfig()
         {
-            _output = output;
-            _httpClient = new HttpClient();
-            _identityServerContext = TestServerContext.Create(SampleIdentityServer.Program.CreateWebHostBuilder);
-            _webApiServerContext = TestServerContext.Create(() => SampleWebApi.Program.CreateWebHostBuilder(new[] { $"--Authentication:IdentityServer:Authority", _identityServerContext.Url }));
+            ClientId = "myclientid",
+            ClientSecret = "secret",
+            Resource = "resource.api1",
+            Scope = "scope.api1",
+            TokenUrl = $"{_identityServerContext.Url}/connect/token",
+        });
+    }
 
-            _clientCredentialsTokenProvider = new ClientCredentialsTokenProvider(_httpClient, new ClientCredentialsTokenConfig()
-            {
-                ClientId = "myclientid",
-                ClientSecret = "secret",
-                Resource = "api1",
-                TokenUrl = $"{_identityServerContext.Url}/connect/token",
-            });
-        }
+    [Fact]
+    public async Task GetTokenAsync_works()
+    {
+        // arrange
 
-        [Fact]
-        public async Task GetTokenAsync_works()
-        {
-            // arrange
+        // act
+        var token = await _clientCredentialsTokenProvider.GetTokenAsync(default);
 
-            // act
-            var token = await _clientCredentialsTokenProvider.GetTokenAsync();
+        // assert
+        Assert.NotEmpty(token);
+    }
 
-            // assert
-            Assert.NotEmpty(token);
-        }
+    [Fact]
+    public async Task WithTokenAuthentication_works()
+    {
+        // arrange
 
-        [Fact]
-        public async Task WithTokenAuthentication_works()
-        {
-            // arrange
-
-            // act
-            var response = await _httpClient.SendAsync(request =>
+        // act
+        using var response = await _httpClient
+            .WithBearerAuthentication(_clientCredentialsTokenProvider)
+            .SendAsync(request =>
             {
                 request
                     .WithMethod(HttpMethod.Get)
                     .WithBaseUri(_webApiServerContext.Url)
-                    .WithUriPath("/api/echo/userInfo")
-                    .WithTokenAuthentication(_clientCredentialsTokenProvider)
-                    ;
+                    .WithUriPath("/api/echo/userInfo");
             });
 
-            // assert
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        }
+        // assert
+        var message = await response.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
 
-        [Fact]
-        public async Task Without_TokenAuthentication_returns_401()
+    [Fact]
+    public async Task Without_TokenAuthentication_returns_401()
+    {
+        // arrange
+
+        // act
+        using var response = await _httpClient.SendAsync(request =>
         {
-            // arrange
+            request
+                .WithMethod(HttpMethod.Get)
+                .WithBaseUri(_webApiServerContext.Url)
+                .WithUriPath("/api/echo/userInfo");
+        });
 
-            // act
-            var response = await _httpClient.SendAsync(request =>
-            {
-                request
-                    .WithMethod(HttpMethod.Get)
-                    .WithBaseUri(_webApiServerContext.Url)
-                    .WithUriPath("/api/echo/userInfo")
-                    ;
-            });
+        // assert
+        var message = await response.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 
-            // assert
-            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        }
-
-        public void Dispose()
-        {
-            _httpClient.Dispose();
-            _identityServerContext.Dispose();
-            _webApiServerContext.Dispose();
-        }
+    public void Dispose()
+    {
+        _httpClient.Dispose();
+        _identityServerContext.Dispose();
+        _webApiServerContext.Dispose();
     }
 }

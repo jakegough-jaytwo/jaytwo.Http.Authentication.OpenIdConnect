@@ -1,100 +1,98 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using jaytwo.MimeHelper;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
 
-namespace jaytwo.Http.Authentication.OpenIdConnect.Tests
+namespace jaytwo.Http.Authentication.OpenIdConnect.Tests;
+
+public class ClientCredentialsTokenProviderTests
 {
-    public class ClientCredentialsTokenProviderTests
+    [Fact]
+    public async Task GetTokenAsync_works()
     {
-        [Fact]
-        public async Task GetTokenAsync_works()
+        // arrange
+        var mockAccessTokenResponse = new AccessTokenResponse()
         {
-            // arrange
-            var mockAccessTokenResponse = new AccessTokenResponse()
-            {
-                ExpiresIn = 1,
-                AccessToken = "orange",
-                TokenType = "apple",
-            };
+            expires_in = 1,
+            access_token = "orange",
+            token_type = "apple",
+        };
 
-            var mockAccessTokenProvider = new Mock<IAccessTokenProvider>();
-            mockAccessTokenProvider
-                .Setup(x => x.GetAccessTokenAsync())
-                .ReturnsAsync(mockAccessTokenResponse);
+        var mockAccessTokenProvider = new Mock<IAccessTokenProvider>();
+        mockAccessTokenProvider
+            .Setup(x => x.GetAccessTokenAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mockAccessTokenResponse);
 
-            var tokenProvider = new ClientCredentialsTokenProvider(mockAccessTokenProvider.Object);
+        var tokenProvider = new ClientCredentialsTokenProvider(mockAccessTokenProvider.Object);
 
-            // act
-            var actualToken = await tokenProvider.GetTokenAsync();
+        // act
+        var actualToken = await tokenProvider.GetTokenAsync(default);
 
-            // assert
-            Assert.Equal(mockAccessTokenResponse.AccessToken, actualToken);
-        }
+        // assert
+        Assert.Equal(mockAccessTokenResponse.access_token, actualToken);
+    }
 
-        [Fact]
-        public async Task GetTokenAsync_does_not_call_GetAccessToken_again_if_token_is_fresh()
+    [Fact]
+    public async Task GetTokenAsync_does_not_call_GetAccessToken_again_if_token_is_fresh()
+    {
+        // arrange
+        var mockAccessTokenResponse = new AccessTokenResponse()
         {
-            // arrange
-            var mockAccessTokenResponse = new AccessTokenResponse()
-            {
-                AccessToken = "orange",
-                TokenType = "apple",
-                Created = new DateTimeOffset(new DateTime(2020, 6, 9, 12, 00, 00)),
-                ExpiresIn = 10,
-                Threshold = TimeSpan.FromSeconds(9),
-                NowDelegate = () => new DateTimeOffset(new DateTime(2020, 6, 9, 12, 00, 00)),
-            };
+            access_token = "orange",
+            token_type = "apple",
+            Created = new DateTimeOffset(new DateTime(2020, 6, 9, 12, 00, 00)),
+            expires_in = 10,
+            NowFactory = () => new DateTimeOffset(new DateTime(2020, 6, 9, 12, 00, 00)),
+        };
 
-            var mockAccessTokenProvider = new Mock<IAccessTokenProvider>();
-            mockAccessTokenProvider
-                .Setup(x => x.GetAccessTokenAsync())
-                .ReturnsAsync(mockAccessTokenResponse);
+        var mockAccessTokenProvider = new Mock<IAccessTokenProvider>();
+        mockAccessTokenProvider
+            .Setup(x => x.GetAccessTokenAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mockAccessTokenResponse);
 
-            var tokenProvider = new ClientCredentialsTokenProvider(mockAccessTokenProvider.Object);
+        var tokenProvider = new ClientCredentialsTokenProvider(mockAccessTokenProvider.Object);
 
-            // act
-            await tokenProvider.GetTokenAsync();
-            await tokenProvider.GetTokenAsync();
-            await tokenProvider.GetTokenAsync();
+        // act
+        await tokenProvider.GetTokenAsync(default);
+        await tokenProvider.GetTokenAsync(default);
+        await tokenProvider.GetTokenAsync(default);
 
-            // assert
-            mockAccessTokenProvider.Verify(x => x.GetAccessTokenAsync(), Times.Once);
-        }
+        // assert
+        mockAccessTokenProvider.Verify(x => x.GetAccessTokenAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
 
-        [Fact]
-        public async Task GetTokenAsync_calls_GetAccessToken_again_if_token_is_not_fresh()
+    [Fact]
+    public async Task GetTokenAsync_calls_GetAccessToken_again_if_token_is_not_fresh()
+    {
+        // arrange
+        var mockAccessTokenResponse = new AccessTokenResponse()
         {
-            // arrange
-            var mockAccessTokenResponse = new AccessTokenResponse()
-            {
-                AccessToken = "orange",
-                TokenType = "apple",
-                Created = new DateTimeOffset(new DateTime(2020, 6, 9, 12, 00, 00)),
-                ExpiresIn = 10,
-                Threshold = TimeSpan.FromSeconds(9),
-                NowDelegate = () => new DateTimeOffset(new DateTime(2020, 6, 9, 12, 00, 00)),
-            };
+            access_token = "orange",
+            token_type = "apple",
+            Created = new DateTimeOffset(new DateTime(2020, 6, 9, 12, 00, 00)),
+            expires_in = 10,
+            NowFactory = () => new DateTimeOffset(new DateTime(2020, 6, 9, 12, 00, 00)),
+        };
 
-            var mockAccessTokenProvider = new Mock<IAccessTokenProvider>();
-            mockAccessTokenProvider
-                .Setup(x => x.GetAccessTokenAsync())
-                .ReturnsAsync(mockAccessTokenResponse);
+        var mockAccessTokenProvider = new Mock<IAccessTokenProvider>();
+        mockAccessTokenProvider
+            .Setup(x => x.GetAccessTokenAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mockAccessTokenResponse);
 
-            var tokenProvider = new ClientCredentialsTokenProvider(mockAccessTokenProvider.Object);
+        var tokenProvider = new ClientCredentialsTokenProvider(mockAccessTokenProvider.Object);
 
-            // act
-            await tokenProvider.GetTokenAsync();
-            await tokenProvider.GetTokenAsync();
-            mockAccessTokenResponse.NowDelegate = () => new DateTimeOffset(new DateTime(2020, 6, 9, 12, 00, 20));
-            await tokenProvider.GetTokenAsync();
+        // act
+        await tokenProvider.GetTokenAsync(default);
+        await tokenProvider.GetTokenAsync(default);
+        mockAccessTokenResponse.NowFactory = () => new DateTimeOffset(new DateTime(2020, 6, 9, 12, 00, 20));
+        await tokenProvider.GetTokenAsync(default);
 
-            // assert
-            mockAccessTokenProvider.Verify(x => x.GetAccessTokenAsync(), Times.Exactly(2));
-        }
+        // assert
+        mockAccessTokenProvider.Verify(x => x.GetAccessTokenAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 }

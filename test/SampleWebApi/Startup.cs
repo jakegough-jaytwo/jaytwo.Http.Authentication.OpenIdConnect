@@ -8,57 +8,77 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Swagger;
 
-namespace SampleWebApi
+namespace SampleWebApi;
+
+public class Startup
 {
-    public class Startup
+    public IConfiguration _configuration;
+
+    public Startup(IConfiguration configuration)
     {
-        public IConfiguration _configuration;
+        _configuration = configuration;
+    }
 
-        public Startup(IConfiguration configuration)
+    public void ConfigureServices(IServiceCollection services)
+    {
+        var identityServerAuthorityUrl = _configuration["Authentication:IdentityServer:Authority"];
+        if (string.IsNullOrEmpty(identityServerAuthorityUrl))
         {
-            _configuration = configuration;
+            identityServerAuthorityUrl = "http://localhost:5001";
         }
 
-        public void ConfigureServices(IServiceCollection services)
+        services.AddControllers();
+
+        services.AddAuthorization(options =>
         {
-            var identityServerAuthorityUrl = _configuration["Authentication:IdentityServer:Authority"];
-            if (string.IsNullOrEmpty(identityServerAuthorityUrl))
+            options.AddPolicy("ApiScope", policy =>
             {
-                identityServerAuthorityUrl = "http://localhost:5001";
-            }
+                policy.RequireAuthenticatedUser();
+                policy.RequireClaim("scope", "scope.api1");
+            });
+        });
 
-            services.AddMvc();
-
-            services.AddAuthentication("jwt")
-                .AddJwtBearer("jwt", options =>
+        services.AddAuthentication("Bearer")
+            .AddJwtBearer("Bearer", options =>
+            {
+                options.Authority = identityServerAuthorityUrl;
+                options.RequireHttpsMetadata = false;
+                options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    options.Authority = identityServerAuthorityUrl;
-                    options.RequireHttpsMetadata = false;
-                    options.Audience = "api1";
-                });
-
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new Info { Title = "My API", Version = "v1" });
+                    ValidateAudience = true,
+                    ValidAudiences = new[] { "resource.api1" },
+                };
             });
-        }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        services.AddSwaggerGen(c =>
         {
-            app.UseDeveloperExceptionPage();
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+        });
+    }
 
-            app.UseAuthentication();
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        app.UseDeveloperExceptionPage();
 
-            app.UseSwagger();
+        app.UseSwagger();
 
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-            });
+        app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+        });
 
-            app.UseMvcWithDefaultRoute();
-        }
+        app.UseRouting();
+
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+        app.UseEndpoints(endpoints =>
+        {
+            endpoints.MapControllers();
+        });
     }
 }
