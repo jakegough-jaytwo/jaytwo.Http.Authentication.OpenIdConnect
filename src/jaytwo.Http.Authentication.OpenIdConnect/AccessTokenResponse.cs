@@ -1,39 +1,33 @@
 using System;
-using Newtonsoft.Json;
 
-namespace jaytwo.Http.Authentication.OpenIdConnect
+namespace jaytwo.Http.Authentication.OpenIdConnect;
+
+public class AccessTokenResponse
 {
-    public class AccessTokenResponse
+    public AccessTokenResponse()
     {
-        public AccessTokenResponse()
-        {
-            Created = NowDelegate();
-        }
+        Created = NowFactory();
+    }
 
-        [JsonProperty("access_token")]
-        public string AccessToken { get; set; }
+    public string access_token { get; set; }
 
-        [JsonProperty("expires_in")]
-        public int ExpiresIn { get; set; }
+    public int expires_in { get; set; }
 
-        [JsonProperty("token_type")]
-        public string TokenType { get; set; }
+    public string token_type { get; set; }
 
-        internal DateTimeOffset Created { get; set; }
+    public string scope { get; set; }
 
-        internal TimeSpan Threshold { get; set; } = TimeSpan.FromSeconds(60);
+    internal DateTimeOffset Created { get; set; }
 
-        internal Func<DateTimeOffset> NowDelegate { get; set; } = () => DateTimeOffset.Now;
+    internal Func<DateTimeOffset> NowFactory { get; set; } = () => DateTimeOffset.Now;
 
-        public bool IsFresh()
-        {
-            var expiration = Created
-                .Add(TimeSpan.FromSeconds(ExpiresIn))
-                .Subtract(Threshold);
+    public bool IsFresh()
+    {
+        var now = NowFactory();
 
-            var now = NowDelegate();
+        // half of expiration time patterned off of how DHCP refreshes based on TTL
+        var expiration = Created.Add(TimeSpan.FromSeconds(expires_in / 2));
 
-            return now <= expiration;
-        }
+        return now <= expiration;
     }
 }
