@@ -30,6 +30,8 @@ public class ClientCredentialsTokenProvider : IBearerTokenProvider
         await _semaphore.WaitAsync();
         try
         {
+            // TODO: period between not fresh but not expired... you can try to get an access token and fail gracefully
+
             var refreshRequired = !_cachedAccessToken?.IsFresh() ?? true;
             if (refreshRequired)
             {
